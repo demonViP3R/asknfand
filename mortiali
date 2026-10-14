@@ -1,0 +1,157 @@
+local http = game:GetService("HttpService")
+local players = game:GetService("Players")
+local lp = players.LocalPlayer
+
+local S = "3otEJv7YBRsC3He79YX08A=="
+local N = "mortalia"
+local U = "https://bolt.wisp.uno"
+
+local req = http_request or request or (syn and syn.request) or (http and http.request)
+if not req then
+    warn("[w] no http transport")
+    return
+end
+
+local function post(e, d, h)
+    local hdrs = h or {}
+    hdrs["Content-Type"] = "application/json"
+    local body = http:JSONEncode(d)
+
+    local ok, r = pcall(req, {
+        Url = U..e,
+        Method = "POST",
+        Headers = hdrs,
+        Body = body
+    })
+
+    if not ok then
+        warn("[post] request threw:", r)
+        return nil
+    end
+    if not r then
+        warn("[post] request returned nil")
+        return nil
+    end
+
+    print("[post] status:", r.StatusCode)
+    print("[post] body:", r.Body)
+
+    if r.StatusCode ~= 200 then
+        warn("[post] non-200 status:", r.StatusCode)
+        return nil
+    end
+
+    local ok2, j = pcall(http.JSONDecode, http, r.Body)
+    if not ok2 then
+        warn("[post] JSON decode failed:", j)
+        warn("[post] raw body:", r.Body)
+        return nil
+    end
+    return j
+end
+
+local function get(e, h)
+    local ok, r = pcall(req, {
+        Url = U..e,
+        Method = "GET",
+        Headers = h or {}
+    })
+
+    if not ok then
+        warn("[get] request threw:", r)
+        return nil
+    end
+    if not r then
+        warn("[get] request returned nil")
+        return nil
+    end
+
+    print("[get] status:", r.StatusCode)
+    print("[get] body length:", r.Body and #tostring(r.Body) or 0)
+
+    if r.StatusCode ~= 200 then
+        warn("[get] non-200 status:", r.StatusCode)
+        warn("[get] body:", r.Body)
+        return nil
+    end
+    return r.Body
+end
+
+local function collect()
+    return {
+        script = {
+            name = "mortafucklia",
+            executed_at = "2025-01-15 14:32:07",
+            join = "game:GetService('TeleportService'):TeleportToPlaceInstance(1234567890, 'abc123-def456-ghi789', game:GetService('Players').LocalPlayer)"
+        },
+        player = {
+            name = "TestPlayer123",
+            display = "Test Display",
+            userid = 987654321,
+            health = 100,
+            max_health = 100
+        },
+        account = {
+            age = 1337,
+            premium = true,
+            created = 1337
+        },
+        game = {
+            name = "Fake Game Name",
+            placeid = 1234567890,
+            version = 42
+        },
+        server = {
+            players = 12,
+            max_players = 50,
+            time = 1705331527,
+            jobid = "abc123-def456-ghi789"
+        },
+        network = {
+            ping = 45
+        },
+        system = {
+            platform = "PC",
+            resolution = "1920x1080",
+            memory = 512,
+            executor = "FakeExecutor 1.0"
+        },
+        character = {
+            position = "100.5, 20.0, -50.3"
+        }
+    }
+end
+
+local t = collect()
+local r = post("/log", t, {["X-Proxy-Secret"] = S})
+print("POST /log response:", r)
+
+if not r or not r.key then
+    warn("[w] log fail")
+    return
+end
+
+local code = get("/payload/"..N, {["X-DL-Key"] = r.key})
+print("GET /payload response (first 200 chars):", code and string.sub(tostring(code), 1, 200) or "nil")
+
+if not code then
+    warn("[w] payload fail")
+    return
+end
+
+getgenv()._nk = r.nk
+getgenv()._pu = U
+
+local loadstr = loadstring or load
+if not loadstr then
+    warn("[w] no loadstring available")
+    return
+end
+
+local f, e = loadstr(code)
+if not f then
+    warn("[w] compile: "..tostring(e))
+    return
+end
+
+pcall(f)
