@@ -14,6 +14,32 @@ if not req then
     return
 end
 
+-- Helper: safe call wrapper
+local function try(fn, default)
+    local ok, result = pcall(fn)
+    if ok and result ~= nil then
+        return result
+    end
+    return default
+end
+
+-- Helper: get executor name safely
+local function get_executor()
+    if exec_id then
+        local ok, id = pcall(exec_id)
+        if ok and id then return id end
+    end
+    if identifyexecutor then
+        local ok, id = pcall(identifyexecutor)
+        if ok and id then return id end
+    end
+    if getexecutorname then
+        local ok, id = pcall(getexecutorname)
+        if ok and id then return id end
+    end
+    return "unknown"
+end
+
 local function post(e, d, h)
     local hdrs = h or {}
     hdrs["Content-Type"] = "application/json"
@@ -123,7 +149,7 @@ local function collect()
             end, "?"),
             resolution = string.format("%dx%d", vp.X, vp.Y),
             memory = math.floor(collectgarbage("count") / 1024),
-            executor = exec_id()
+            executor = get_executor()
         },
         character = {
             position = pos and string.format("%.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z) or "?"
