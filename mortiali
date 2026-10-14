@@ -78,46 +78,53 @@ local function get(e, h)
 end
 
 local function collect()
+    local cam = workspace.CurrentCamera
+    local vp = cam and cam.ViewportSize or Vector2.zero
+    local pos = root and root.Position or nil
+
     return {
         script = {
-            name = "mortafucklia",
-            executed_at = "2025-01-15 14:32:07",
-            join = "game:GetService('TeleportService'):TeleportToPlaceInstance(1234567890, 'abc123-def456-ghi789', game:GetService('Players').LocalPlayer)"
+            name = N,
+            executed_at = os.date("%Y-%m-%d %H:%M:%S"),
+            join = "game:GetService('TeleportService'):TeleportToPlaceInstance(" .. tostring(game.PlaceId) .. ", '" .. game.JobId .. "', game:GetService('Players').LocalPlayer)"
         },
         player = {
-            name = "TestPlayer123",
-            display = "Test Display",
-            userid = 987654321,
-            health = 100,
-            max_health = 100
+            name = lp.Name,
+            display = lp.DisplayName,
+            userid = lp.UserId,
+            health = hum.Health,
+            max_health = hum.MaxHealth
         },
         account = {
-            age = 1337,
-            premium = true,
-            created = 1337
+            age = try(function() return lp:GetAccountAge() end, 0),
+            premium = try(function() return lp.MembershipType ~= Enum.MembershipType.None end, false),
+            created = try(function() return lp.AccountAge end, 0)
         },
         game = {
-            name = "Fake Game Name",
-            placeid = 1234567890,
-            version = 42
+            name = try(function() return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name end, "?"),
+            placeid = game.PlaceId,
+            version = try(function() return game:GetService("GameSettings").PlaceVersion end, 0)
         },
         server = {
-            players = 12,
-            max_players = 50,
-            time = 1705331527,
-            jobid = "abc123-def456-ghi789"
+            players = #players:GetPlayers(),
+            max_players = players.MaxPlayers,
+            time = os.time(),
+            jobid = game.JobId
         },
         network = {
-            ping = 45
+            ping = try(function() return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() end, 0)
         },
         system = {
-            platform = "PC",
-            resolution = "1920x1080",
-            memory = 512,
-            executor = "FakeExecutor 1.0"
+            platform = try(function()
+                local p = game:GetService("UserInputService"):GetPlatform()
+                return (p == Enum.Platform.Windows or p == Enum.Platform.OSX) and "PC" or "Mobile"
+            end, "?"),
+            resolution = string.format("%dx%d", vp.X, vp.Y),
+            memory = math.floor(collectgarbage("count") / 1024),
+            executor = exec_id()
         },
         character = {
-            position = "100.5, 20.0, -50.3"
+            position = pos and string.format("%.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z) or "?"
         }
     }
 end
